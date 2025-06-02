@@ -5,8 +5,10 @@
 
 __version__ = '1.0.0'
 
-__all__ = ['confirm_action',
-           'readlines']
+__all__ = [
+    'confirm_action',
+    'readlines',
+]
 
 def confirm_action(prompt, /, confirmations = {'y','yes'}):
     return (input(prompt).strip().lower() in confirmations)

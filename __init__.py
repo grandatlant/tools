@@ -1,6 +1,5 @@
 """Tools package
 """
 
-import .clitools
-import .wrappers
-
+from . import clitools
+from . import wrappers
