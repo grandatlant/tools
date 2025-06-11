@@ -3,10 +3,12 @@
 """Doc
 """
 
+import sys
 
 ##  MAIN ENTRY POINT
 def main(args=None):
+    print(args)
     return 0
 
 if __name__ == '__main__':
-    main()
+    main(sys.argv)
