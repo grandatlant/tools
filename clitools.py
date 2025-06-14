@@ -3,15 +3,17 @@
 """Tools to simplify work with CLI
 """
 
-__version__ = '1.0.0'
+__version__ = '1.0.1'
 
 __all__ = [
     'confirm_action',
     'readlines',
 ]
 
+
 def confirm_action(prompt, /, confirmations = {'y','yes'}):
     return (input(prompt).strip().lower() in confirmations)
+
 
 def readlines(prompt = None, lines = None, end = None):
     """Generator for input() until EOFError"""
@@ -32,9 +34,11 @@ def readlines(prompt = None, lines = None, end = None):
             lines.append(end)
         yield end
 
+
 ##  MAIN
 def main():
     return 0
+
 
 if __name__ == '__main__':
     main()

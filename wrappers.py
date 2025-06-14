@@ -3,7 +3,7 @@
 """Decorators and other tools to enhance function usage.
 """
 
-__version__ = '1.0.0'
+__version__ = '1.0.1'
 __copyright__ = 'Copyright (C) 2025 grandatlant'
 
 __all__ = [
@@ -19,6 +19,7 @@ import logging
 import functools
 
 from typing import Callable
+
 
 def log_perf_counter(
     param = None,
@@ -68,6 +69,7 @@ def log_perf_counter(
     Returns:
         Callable: The decorator or wrapper function depends on param
     """
+    
     def decorator(func):
         _func_trace = '%s.%s' % (
             func.__module__,
@@ -303,9 +305,11 @@ def call_after(
         reduce_result_func=reduce_result_func,
         )
 
+
 ##  MAIN ENTRY POINT
 def main(args=None):
     return 0
+
 
 if __name__ == '__main__':
     main()
