@@ -1,5 +1,3 @@
-#!/usr/bin/env -S python3 -O
-# -*- coding = utf-8 -*-
 """Decorators and other tools to enhance function usage.
 """
 
@@ -13,6 +11,7 @@ __all__ = [
     'call_before',
     'call_after',
 ]
+
 
 import time
 import logging
@@ -304,12 +303,3 @@ def call_after(
         return_filter_func=return_filter_func,
         reduce_result_func=reduce_result_func,
         )
-
-
-##  MAIN ENTRY POINT
-def main(args=None):
-    return 0
-
-
-if __name__ == '__main__':
-    main()

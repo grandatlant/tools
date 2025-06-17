@@ -1,9 +1,8 @@
-#!/usr/bin/env -S python3 -OO
-# -*- coding=utf-8 -*-
 """Tools to simplify work with CLI
 """
 
 __version__ = '1.0.1'
+__copyright__ = 'Copyright (C) 2025 grandatlant'
 
 __all__ = [
     'confirm_action',
@@ -33,12 +32,3 @@ def readlines(prompt = None, lines = None, end = None):
         if append_lines:
             lines.append(end)
         yield end
-
-
-##  MAIN
-def main():
-    return 0
-
-
-if __name__ == '__main__':
-    main()

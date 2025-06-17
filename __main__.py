@@ -1,11 +1,10 @@
-#!/usr/bin/env -S python3 -O
-# -*- coding = utf-8 -*-
 """Tools package main module
 """
 
 
 ##  MAIN ENTRY POINT
 def main(args=None):
+    print(__doc__)
     return 0
 
 
