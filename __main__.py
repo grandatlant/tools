@@ -1,4 +1,5 @@
-"""Tools package main module
+"""Tools package main module.
+For using as "python3 -m tools."
 """
 
 
