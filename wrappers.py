@@ -17,15 +17,18 @@ import time
 import logging
 import functools
 
-from typing import Callable
+from typing import (
+    Optional,
+    Callable,
+)
 
 
 def log_perf_counter(
-    param = None,
+    param: Optional[Callable] = None,
     /,
     *,
     perf_counter: Callable = time.perf_counter,
-    logger: logging.Logger = None,
+    logger: Optional[logging.Logger] = None,
     level: int = logging.DEBUG,
     log_call: bool = False,
     log_args: bool = False,
@@ -123,14 +126,14 @@ def log_perf_counter(
 
 
 def wrap_with_calls(
-    func = None,
+    func: Optional[Callable] = None,
     *func_args,
-    first_call: Callable = None,
-    after_call: Callable = None,
-    args: tuple = None,
-    kwds: dict = None,
-    return_filter_func: Callable = None,
-    reduce_result_func: Callable = None,
+    first_call: Optional[Callable] = None,
+    after_call: Optional[Callable] = None,
+    args: Optional[tuple] = None,
+    kwds: Optional[dict] = None,
+    return_filter_func: Optional[Callable] = None,
+    reduce_result_func: Optional[Callable] = None,
     ) -> Callable:
     r"""Decorator to execute specified functions
     before and after the decorated function.
@@ -176,7 +179,7 @@ def wrap_with_calls(
     _args = args or tuple()
     _kwds = kwds or dict()
     
-    @functools.wraps(func)
+    @functools.wraps(func) # type: ignore
     def decorator(decorated_func):
         @functools.wraps(decorated_func)
         def decorated_func_wrapper(
@@ -240,13 +243,13 @@ def wrap_with_calls(
 
 
 def wrap_with(
-    func_before = None,
-    func_after = None,
+    func_before: Optional[Callable] = None,
+    func_after: Optional[Callable] = None,
     *func_args,
-    args: tuple = None,
-    kwds: dict = None,
-    return_filter_func: Callable = None,
-    reduce_result_func: Callable = None,
+    args: Optional[tuple] = None,
+    kwds: Optional[dict] = None,
+    return_filter_func: Optional[Callable] = None,
+    reduce_result_func: Optional[Callable] = None,
 ) -> Callable:
     r"""Wrapper for 'wrap_with_calls' decorator
     for call 'func_before' before decorated function
@@ -264,12 +267,12 @@ def wrap_with(
 
 
 def call_before(
-    func,
+    func: Callable,
     *func_args,
-    args: tuple = None,
-    kwds: dict = None,
-    return_filter_func: Callable = None,
-    reduce_result_func: Callable = None,
+    args: Optional[tuple] = None,
+    kwds: Optional[dict] = None,
+    return_filter_func: Optional[Callable] = None,
+    reduce_result_func: Optional[Callable] = None,
 ) -> Callable:
     r"""Wrapper for 'wrap_with_calls' decorator
     for call 'func' before decorated function execution.
@@ -285,12 +288,12 @@ def call_before(
 
 
 def call_after(
-    func,
+    func: Callable,
     *func_args,
-    args: tuple = None,
-    kwds: dict = None,
-    return_filter_func: Callable = None,
-    reduce_result_func: Callable = None,
+    args: Optional[tuple] = None,
+    kwds: Optional[dict] = None,
+    return_filter_func: Optional[Callable] = None,
+    reduce_result_func: Optional[Callable] = None,
 ) -> Callable:
     r"""Wrapper for 'wrap_with_calls' decorator
     for call 'func' after decorated function execution.

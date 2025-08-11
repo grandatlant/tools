@@ -28,7 +28,7 @@ def readlines(prompt = None, lines = None, end = None):
     prompt_input = str(prompt) if prompt else ''
     append_lines = (
         isinstance(lines, list)
-        or (hasattr(lines, 'append') and callable(lines.append))
+        or (hasattr(lines, 'append') and callable(lines.append)) # type: ignore
     )
     while True:
         try:
@@ -36,9 +36,9 @@ def readlines(prompt = None, lines = None, end = None):
         except EOFError:
             break
         if append_lines:
-            lines.append(line)
+            lines.append(line) # type: ignore
         yield line
     if end is not None:
         if append_lines:
-            lines.append(end)
+            lines.append(end) # type: ignore
         yield end
