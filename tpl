@@ -1,2 +1,3 @@
-#!/bin/bash
-python3 tpl.py "$@"
+#!/usr/bin/env bash
+uv run --script tpl.py "$@"
+
