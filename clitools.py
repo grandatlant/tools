@@ -1,7 +1,6 @@
-"""Tools to simplify work with CLI
-"""
+"""Tools to simplify work with CLI."""
 
-__version__ = '1.0.2'
+__version__ = '1.0.3'
 __copyright__ = 'Copyright (C) 2025 grandatlant'
 
 __all__ = [
@@ -27,12 +26,12 @@ class Appendable(Protocol):
 
 def confirm_action(
     prompt: str,
-    confirmations: Container[str] = {'y','yes'}
+    confirmations: Container[str] = {'y', 'yes'},
 ) -> bool:
     """Accept confirmation from user in form "y" or "yes"
     or any in "confirmations" given in lowercase.
     """
-    return (input(prompt).strip().lower() in confirmations)
+    return input(prompt).strip().lower() in confirmations
 
 
 def readlines(

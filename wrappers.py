@@ -1,7 +1,6 @@
-"""Decorators and other tools to enhance function usage.
-"""
+"""Decorators and other tools to enhance function usage."""
 
-__version__ = '1.0.2'
+__version__ = '1.0.3'
 __copyright__ = 'Copyright (C) 2025 grandatlant'
 
 __all__ = [
@@ -44,7 +43,7 @@ def log_perf_counter(
             Default value: None
         perf_counter (Callable):
             function with no arguments, returning value
-            with '__sub__' method implemented to determine time-delta, 
+            with '__sub__' method implemented to determine time-delta,
             waisted for decorated function call.
             Default value: time.perf_counter
         logger (logging.Logger):
@@ -72,54 +71,61 @@ def log_perf_counter(
     Returns:
         Callable: The decorator or wrapper function depends on param.
     """
-    
+
     def decorator(func):
         _func_trace: str = '%s.%s' % (
             func.__module__,
             func.__name__,
         )
-        _logger: logging.Logger = logger or logging.getLogger(_func_trace)
+        _logger: logging.Logger = (
+            logging.getLogger(_func_trace) if logger is None else logger
+        )
 
         @functools.wraps(func)
         def wrapper(*func_args, **func_kwds):
             if log_args:
                 _func_call_trace: str = '{func}(*{args}, **{kwds})'.format(
-                    func = _func_trace,
-                    args = func_args,
-                    kwds = func_kwds,
+                    func=_func_trace,
+                    args=func_args,
+                    kwds=func_kwds,
                 )
             else:
                 _func_call_trace: str = _func_trace
-            
+
             if log_call:
                 _logger.log(level, 'Call %s start.' % _func_call_trace)
-            
+
             pc_before = perf_counter()
             func_return = func(*func_args, **func_kwds)
             pc_after = perf_counter()
             pc_delta = pc_after - pc_before
-            
+
             if log_call:
                 _logger.log(
                     level,
                     'Call %s finish. '
                     'Start: %s. '
                     'Finish: %s. '
-                    'Delta: %s.' % (
+                    'Delta: %s.'
+                    % (
                         _func_call_trace,
                         pc_before,
                         pc_after,
                         pc_delta,
-                    )
+                    ),
                 )
             else:
-                _logger.log(level, '%s call time: %s' % (
-                    _func_call_trace,
-                    pc_delta,
-                ))
-            
+                _logger.log(
+                    level,
+                    '%s call time: %s'
+                    % (
+                        _func_call_trace,
+                        pc_delta,
+                    ),
+                )
+
             return func_return
-        
+
         return wrapper
 
     if param is None:
@@ -138,7 +144,7 @@ def wrap_with_calls(
     kwds: Optional[dict] = None,
     return_filter_func: Optional[Callable[[Any], bool]] = None,
     reduce_result_func: Optional[Callable[[Any, Any], Any]] = None,
-    ) -> Callable:
+) -> Callable:
     r"""Decorator to execute specified functions
     before and after the decorated function.
 
@@ -176,19 +182,18 @@ def wrap_with_calls(
         else:
             # I dont want exceptions here for dynamic use
             return list()
-            #raise ValueError(f'Parameter "{callables}" '
+            # raise ValueError(f'Parameter "{callables}" '
             #                 'must be a callable '
             #                 'or an iterable of callables.')
-    
+
     _args = args or tuple()
     _kwds = kwds or dict()
-    
-    @functools.wraps(func) # type: ignore
+
+    @functools.wraps(func)  # type: ignore
     def decorator(decorated_func):
         @functools.wraps(decorated_func)
         def decorated_func_wrapper(
-            *decorated_func_args,
-            **decorated_func_kwds
+            *decorated_func_args, **decorated_func_kwds
         ):
             results = list()
 
@@ -196,34 +201,36 @@ def wrap_with_calls(
             for item in list_of_callables(first_call):
                 if callable(item):
                     cur_result = item(*_args, **_kwds)
-                    if (callable(return_filter_func)
-                        and return_filter_func(cur_result)):
+                    if callable(return_filter_func) and return_filter_func(
+                        cur_result
+                    ):
                         return cur_result
                     results.append(cur_result)
 
             # func before decorated_func
             if callable(func):
                 func_result = func(*func_args, *_args, **_kwds)
-                if (callable(return_filter_func)
-                    and return_filter_func(func_result)):
+                if callable(return_filter_func) and return_filter_func(
+                    func_result
+                ):
                     return func_result
                 results.append(func_result)
 
             # !!! decorated_func call !!!
             decorated_func_result = decorated_func(
-                *decorated_func_args,
-                **decorated_func_kwds
+                *decorated_func_args, **decorated_func_kwds
             )
             ##TODO: Think about next 2 commented lines...
-            #if return_filter_func(decorated_func_result):
+            # if return_filter_func(decorated_func_result):
             #    return decorated_func_result
             results.append(decorated_func_result)
 
             # func after decorated_func
             if callable(func):
                 func_result = func(*func_args, *_args, **_kwds)
-                if (callable(return_filter_func)
-                    and return_filter_func(func_result)):
+                if callable(return_filter_func) and return_filter_func(
+                    func_result
+                ):
                     return func_result
                 results.append(func_result)
 
@@ -231,18 +238,21 @@ def wrap_with_calls(
             for item in list_of_callables(after_call):
                 if callable(item):
                     cur_result = item(*_args, **_kwds)
-                    if (callable(return_filter_func)
-                        and return_filter_func(cur_result)):
+                    if callable(return_filter_func) and return_filter_func(
+                        cur_result
+                    ):
                         return cur_result
                     results.append(cur_result)
-            
+
             # reduce results if specified
             if callable(reduce_result_func):
                 return functools.reduce(reduce_result_func, results)
-            
+
             # general result
             return decorated_func_result
+
         return decorated_func_wrapper
+
     return decorator
 
 
@@ -267,7 +277,7 @@ def wrap_with(
         kwds=kwds,
         return_filter_func=return_filter_func,
         reduce_result_func=reduce_result_func,
-        )
+    )
 
 
 def call_before(
@@ -288,7 +298,7 @@ def call_before(
         kwds=kwds,
         return_filter_func=return_filter_func,
         reduce_result_func=reduce_result_func,
-        )
+    )
 
 
 def call_after(
@@ -309,4 +319,4 @@ def call_after(
         kwds=kwds,
         return_filter_func=return_filter_func,
         reduce_result_func=reduce_result_func,
-        )
+    )
