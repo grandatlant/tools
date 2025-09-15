@@ -1,7 +1,3 @@
-# Code template for copy-paste
-#tpl
-#tpl.py
-
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
