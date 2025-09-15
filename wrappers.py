@@ -1,7 +1,7 @@
 """Decorators and other tools to enhance function usage.
 """
 
-__version__ = '1.0.1'
+__version__ = '1.0.2'
 __copyright__ = 'Copyright (C) 2025 grandatlant'
 
 __all__ = [
@@ -17,21 +17,25 @@ import time
 import logging
 import functools
 
-from typing import Callable
+from typing import (
+    Any,
+    Optional,
+    Callable,
+)
 
 
 def log_perf_counter(
-    param = None,
+    param: Optional[Callable] = None,
     /,
     *,
-    perf_counter: Callable = time.perf_counter,
-    logger: logging.Logger = None,
+    perf_counter: Callable[[], Any] = time.perf_counter,
+    logger: Optional[logging.Logger] = None,
     level: int = logging.DEBUG,
     log_call: bool = False,
     log_args: bool = False,
-    ) -> Callable:
+) -> Callable:
     r"""Decorator for performance measurement purposes,
-    using perf_counter parameter as callable (default time.perf_counter_ns)
+    using perf_counter parameter as callable (default time.perf_counter_ns).
 
     Parameters:
         param (Callable | None):
@@ -66,25 +70,26 @@ def log_perf_counter(
             Default value: False
 
     Returns:
-        Callable: The decorator or wrapper function depends on param
+        Callable: The decorator or wrapper function depends on param.
     """
     
     def decorator(func):
-        _func_trace = '%s.%s' % (
+        _func_trace: str = '%s.%s' % (
             func.__module__,
             func.__name__,
         )
-        _logger = logger or logging.getLogger(_func_trace)
+        _logger: logging.Logger = logger or logging.getLogger(_func_trace)
 
         @functools.wraps(func)
         def wrapper(*func_args, **func_kwds):
-            _func_call_trace = _func_trace
             if log_args:
-                _func_call_trace = '{func}(*{args}, **{kwds})'.format(
+                _func_call_trace: str = '{func}(*{args}, **{kwds})'.format(
                     func = _func_trace,
                     args = func_args,
                     kwds = func_kwds,
                 )
+            else:
+                _func_call_trace: str = _func_trace
             
             if log_call:
                 _logger.log(level, 'Call %s start.' % _func_call_trace)
@@ -107,30 +112,32 @@ def log_perf_counter(
                         pc_delta,
                     )
                 )
-            
-            _logger.log(level, '%s call time: %s' % (
-                _func_call_trace,
-                pc_delta,
-            ))
+            else:
+                _logger.log(level, '%s call time: %s' % (
+                    _func_call_trace,
+                    pc_delta,
+                ))
             
             return func_return
         
         return wrapper
 
     if param is None:
+        # called as @log_perf_counter(...)
         return decorator
+    # called as @log_perf_counter
     return decorator(param)
 
 
 def wrap_with_calls(
-    func = None,
+    func: Optional[Callable] = None,
     *func_args,
-    first_call: Callable = None,
-    after_call: Callable = None,
-    args: tuple = None,
-    kwds: dict = None,
-    return_filter_func: Callable = None,
-    reduce_result_func: Callable = None,
+    first_call: Optional[Callable] = None,
+    after_call: Optional[Callable] = None,
+    args: Optional[tuple] = None,
+    kwds: Optional[dict] = None,
+    return_filter_func: Optional[Callable[[Any], bool]] = None,
+    reduce_result_func: Optional[Callable[[Any, Any], Any]] = None,
     ) -> Callable:
     r"""Decorator to execute specified functions
     before and after the decorated function.
@@ -151,6 +158,8 @@ def wrap_with_calls(
             Keyword arguments to pass to all callables.
         return_filter_func (Callable):
             Filter function to apply to return values of callables.
+            If return_filter_func(returned_value) True -> return returned_value
+            and stop next processing.
         reduce_result_func (Callable):
             Function to reduce results of all calls into one value.
 
@@ -160,9 +169,7 @@ def wrap_with_calls(
 
     def list_of_callables(callables):
         """Ensure the input is an iterable of callables."""
-        if callables is None:
-            return list()
-        elif callable(callables):
+        if callable(callables):
             return list((callables,))
         elif hasattr(callables, '__iter__'):
             return list(callables)
@@ -176,7 +183,7 @@ def wrap_with_calls(
     _args = args or tuple()
     _kwds = kwds or dict()
     
-    @functools.wraps(func)
+    @functools.wraps(func) # type: ignore
     def decorator(decorated_func):
         @functools.wraps(decorated_func)
         def decorated_func_wrapper(
@@ -240,13 +247,13 @@ def wrap_with_calls(
 
 
 def wrap_with(
-    func_before = None,
-    func_after = None,
+    func_before: Optional[Callable] = None,
+    func_after: Optional[Callable] = None,
     *func_args,
-    args: tuple = None,
-    kwds: dict = None,
-    return_filter_func: Callable = None,
-    reduce_result_func: Callable = None,
+    args: Optional[tuple] = None,
+    kwds: Optional[dict] = None,
+    return_filter_func: Optional[Callable[[Any], bool]] = None,
+    reduce_result_func: Optional[Callable[[Any, Any], Any]] = None,
 ) -> Callable:
     r"""Wrapper for 'wrap_with_calls' decorator
     for call 'func_before' before decorated function
@@ -264,12 +271,12 @@ def wrap_with(
 
 
 def call_before(
-    func,
+    func: Callable,
     *func_args,
-    args: tuple = None,
-    kwds: dict = None,
-    return_filter_func: Callable = None,
-    reduce_result_func: Callable = None,
+    args: Optional[tuple] = None,
+    kwds: Optional[dict] = None,
+    return_filter_func: Optional[Callable[[Any], bool]] = None,
+    reduce_result_func: Optional[Callable[[Any, Any], Any]] = None,
 ) -> Callable:
     r"""Wrapper for 'wrap_with_calls' decorator
     for call 'func' before decorated function execution.
@@ -285,12 +292,12 @@ def call_before(
 
 
 def call_after(
-    func,
+    func: Callable,
     *func_args,
-    args: tuple = None,
-    kwds: dict = None,
-    return_filter_func: Callable = None,
-    reduce_result_func: Callable = None,
+    args: Optional[tuple] = None,
+    kwds: Optional[dict] = None,
+    return_filter_func: Optional[Callable[[Any], bool]] = None,
+    reduce_result_func: Optional[Callable[[Any, Any], Any]] = None,
 ) -> Callable:
     r"""Wrapper for 'wrap_with_calls' decorator
     for call 'func' after decorated function execution.
