@@ -1,9 +1,10 @@
 """Decorators and other tools to enhance function usage."""
 
-__version__ = '1.0.3'
+__version__ = '1.0.4'
 __copyright__ = 'Copyright (C) 2025 grandatlant'
 
 __all__ = [
+    'retry',
     'log_perf_counter',
     'wrap_with_calls',
     'wrap_with',
@@ -15,12 +16,96 @@ __all__ = [
 import time
 import logging
 import functools
+import itertools
 
 from typing import (
     Any,
+    Union,
     Optional,
     Callable,
 )
+
+
+def retry(
+    param: Optional[Callable] = None,
+    /,
+    *,
+    count: int = 3,
+    delay: Optional[float] = None,
+    delay_func: Callable[[float], Any] = time.sleep,
+    exceptions: Union[BaseException, tuple] = Exception,
+    logger: Optional[logging.Logger] = None,
+    default: Any = 'raise',
+) -> Callable:
+    """Decorator for performing retry logic on 'exceptions' occured.
+
+    Parameters:
+        param (Callable | None):
+            function to be decorated when using @retry
+            with no perenteses with all default parameters.
+            Default value: None
+        count (int):
+            maximum tries to call decorated function.
+            Default value: 3
+        delay (float | None):
+            delay after retries before next call try.
+            delay_func will be called with this parameter value.
+            Default value: None
+        delay_func (Callable[[float], Any]):
+            function to use as delay handler with 'delay' param if not None
+            Default value: time.sleep
+        exceptions (BaseException | tuple):
+            Expression used in 'except' clause for 'try' block.
+            Exception class or tuple with exception classes to catch for retry.
+            Default value: Exception
+                catch all non-exit exceptions in default mode.
+        logger (logging.Logger | None):
+            object to use 'exception' method for logging exceptions occured.
+            'exception' method called with parameters
+                msg: str = log message, including func module, name,
+                retry iteration number and exception repr.
+            Default value: None
+                no exception logging performed in this case.
+        default (Any):
+            Value to return in case of all ('count') retry attempts failed.
+            Default value: 'raise'
+                last exception will be reraised in this case
+                with 'raise' statement.
+    """
+
+    def decorator(func):
+        _func_trace: str = '%s.%s' % (
+            func.__module__,
+            func.__name__,
+        )
+
+        @functools.wraps(func)
+        def wrapper(*func_args, **func_kwargs):
+            for iteration in itertools.count(1, 1):
+                try:
+                    return func(*func_args, **func_kwargs)
+                except exceptions as exc:
+                    if logger is not None:
+                        logger.exception(
+                            'Exception in %s call. @retry iteration #%s: %r.',
+                            _func_trace,
+                            iteration,
+                            exc,
+                        )
+                    # Stop trying and break conditions
+                    if iteration >= count:
+                        if default == 'raise':
+                            raise
+                        else:
+                            return default
+                if delay is not None:
+                    delay_func(delay)
+
+        return wrapper
+
+    if param is None:  # called as @retry(...)
+        return decorator
+    return decorator(param)
 
 
 def log_perf_counter(
