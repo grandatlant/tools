@@ -20,8 +20,10 @@ import itertools
 
 from typing import (
     Any,
+    Type,
     Union,
     Optional,
+    Tuple,
     Callable,
 )
 
@@ -33,7 +35,9 @@ def retry(
     count: int = 3,
     delay: Optional[float] = None,
     delay_func: Callable[[float], Any] = time.sleep,
-    exceptions: Union[BaseException, tuple] = Exception,
+    exceptions: Union[
+        Type[BaseException], Tuple[Type[BaseException], ...]
+    ] = Exception,
     logger: Optional[logging.Logger] = None,
     default: Any = 'raise',
 ) -> Callable:
