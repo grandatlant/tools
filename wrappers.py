@@ -29,7 +29,7 @@ from typing import (
 
 
 def retry(
-    param: Optional[Callable] = None,
+    param: Union[Callable, int, None] = None,
     /,
     *,
     count: int = 3,
@@ -39,14 +39,17 @@ def retry(
         Type[BaseException], Tuple[Type[BaseException], ...]
     ] = Exception,
     logger: Optional[logging.Logger] = None,
-    default: Any = 'raise',
+    log_args: bool = False,
+    default: Any = Ellipsis,  # Ellipsis here because 'None' is OK 'default'
 ) -> Callable:
     """Decorator for performing retry logic on 'exceptions' occured.
 
     Parameters:
-        param (Callable | None):
+        param (Callable | int | None):
             function to be decorated when using @retry
             with no perenteses with all default parameters.
+            Also we can provide here 'count' as positional argument
+            to use like '@retry(3)' simplified form decorator.
             Default value: None
         count (int):
             maximum tries to call decorated function.
@@ -70,35 +73,62 @@ def retry(
                 retry iteration number and exception repr.
             Default value: None
                 no exception logging performed in this case.
+        log_args (bool):
+            Flag to log also *args and **kwargs for decorated func call.
+            Default value: False
         default (Any):
             Value to return in case of all ('count') retry attempts failed.
-            Default value: 'raise'
+            Default value: Ellipsis
                 last exception will be reraised in this case
                 with 'raise' statement.
     """
 
+    if param is not None and not callable(param):
+        # We use positional 'param' as retry 'count' in this case.
+        # No type cast in case 'param' is float or any other object
+        # with '(int)>=param' operation available. Its fine for us.
+        try:
+            if 3 >= param:
+                pass
+        except TypeError as exc:
+            raise ValueError(
+                '@retry parameter must be callable or number. Got %r.' % param
+            ) from exc
+        else:
+            count, param = param, None
+
     def decorator(func):
-        _func_trace: str = '%s.%s' % (
+        _func_trace = '%s.%s' % (
             func.__module__,
             func.__name__,
         )
 
         @functools.wraps(func)
         def wrapper(*func_args, **func_kwargs):
+            if log_args:
+                _func_call_trace = '{func}(*{args}, **{kwds})'.format(
+                    func=_func_trace,
+                    args=func_args,
+                    kwds=func_kwargs,
+                )
+            else:
+                _func_call_trace = _func_trace
             for iteration in itertools.count(1, 1):
                 try:
                     return func(*func_args, **func_kwargs)
                 except exceptions as exc:
                     if logger is not None:
                         logger.exception(
-                            'Exception in %s call. @retry iteration #%s: %r.',
-                            _func_trace,
-                            iteration,
-                            exc,
+                            'Exception in %s call, @retry iteration #%s: %r.'
+                            % (
+                                _func_call_trace,
+                                iteration,
+                                exc,
+                            )
                         )
                     # Stop trying and break conditions
                     if iteration >= count:
-                        if default == 'raise':
+                        if default is Ellipsis:
                             raise
                         else:
                             return default
@@ -107,9 +137,9 @@ def retry(
 
         return wrapper
 
-    if param is None:  # called as @retry(...)
-        return decorator
-    return decorator(param)
+    if callable(param):  # called as @retry
+        return decorator(param)
+    return decorator  # called as @retry(...)
 
 
 def log_perf_counter(
