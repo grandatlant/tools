@@ -4,6 +4,8 @@ __version__ = '1.0.4'
 __copyright__ = 'Copyright (C) 2025 grandatlant'
 
 __all__ = [
+    'no_op',
+    'no_op_func',
     'retry',
     'log_perf_counter',
     'wrap_with_calls',
@@ -28,11 +30,18 @@ from typing import (
 )
 
 
+def no_op_func(*args, **kwargs):
+    """Wrapper for doing completely nothing."""
+    return None  # TODO: Think about return value here
+
+
+def no_op(wrapped: Callable):
+    """Decorator to make wrapped func do nothing."""
+    return functools.update_wrapper(no_op_func, wrapped)
+
+
 def retry(
-    param: Union[Callable, int, None] = None,
-    /,
-    *,
-    count: int = 3,
+    count: Union[int, Callable] = 3,
     delay: Optional[float] = None,
     delay_func: Callable[[float], Any] = time.sleep,
     exceptions: Union[
@@ -45,21 +54,17 @@ def retry(
     """Decorator for performing retry logic on 'exceptions' occured.
 
     Parameters:
-        param (Callable | int | None):
-            function to be decorated when using @retry
-            with no perenteses with all default parameters.
-            Also we can provide here 'count' as positional argument
-            to use like '@retry(3)' simplified form decorator.
-            Default value: None
-        count (int):
-            maximum tries to call decorated function.
-            Default value: 3
+        count (int | Callable):
+            maximum tries to call decorated function,
+            or Callable to allow use as @retry with no perenteses.
+            Default value: 3 (yes, just 3, don't ask me why)
         delay (float | None):
             delay after retries before next call try.
             delay_func will be called with this parameter value.
             Default value: None
         delay_func (Callable[[float], Any]):
-            function to use as delay handler with 'delay' param if not None
+            function to use as delay handler with 'delay' param if not None.
+            Can be used as callback for failed try.
             Default value: time.sleep
         exceptions (BaseException | tuple):
             Expression used in 'except' clause for 'try' block.
@@ -83,19 +88,15 @@ def retry(
                 with 'raise' statement.
     """
 
-    if param is not None and not callable(param):
-        # We use positional 'param' as retry 'count' in this case.
-        # No type cast in case 'param' is float or any other object
-        # with '(int)>=param' operation available. Its fine for us.
-        try:
-            if 3 >= param:
-                pass
-        except TypeError as exc:
-            raise ValueError(
-                '@retry parameter must be callable or number. Got %r.' % param
-            ) from exc
-        else:
-            count, param = param, None
+    decorated = None
+    if callable(count) and delay is None:
+        # called as @retry. reset count to default and save func
+        decorated, count = count, 3
+    elif 0 >= count:  # type: ignore
+        # No need 'count' instancecheck, just check if
+        # this comparison types allowed for decorator work.
+        count = 1  # atleast 1 try will be performed anyway. Just explicit set
+        # Note: use @no_op decorator to make 0 tries.
 
     def decorator(func):
         _func_trace = '%s.%s' % (
@@ -103,16 +104,17 @@ def retry(
             func.__name__,
         )
 
-        @functools.wraps(func)
         def wrapper(*func_args, **func_kwargs):
-            if log_args:
-                _func_call_trace = '{func}(*{args}, **{kwds})'.format(
+            _func_call_trace = (
+                '{func}(*{args}, **{kwds})'.format(
                     func=_func_trace,
                     args=func_args,
                     kwds=func_kwargs,
                 )
-            else:
-                _func_call_trace = _func_trace
+                if log_args
+                else _func_trace
+            )
+
             for iteration in itertools.count(1, 1):
                 try:
                     return func(*func_args, **func_kwargs)
@@ -135,10 +137,10 @@ def retry(
                 if delay is not None:
                     delay_func(delay)
 
-        return wrapper
+        return functools.update_wrapper(wrapper, func)
 
-    if callable(param):  # called as @retry
-        return decorator(param)
+    if decorated is not None:  # called as @retry
+        return decorator(decorated)
     return decorator  # called as @retry(...)
 
 
@@ -192,24 +194,22 @@ def log_perf_counter(
     """
 
     def decorator(func):
-        _func_trace: str = '%s.%s' % (
+        _func_trace = '%s.%s' % (
             func.__module__,
             func.__name__,
         )
-        _logger: logging.Logger = (
-            logging.getLogger(_func_trace) if logger is None else logger
-        )
+        _logger = logging.getLogger(_func_trace) if logger is None else logger
 
-        @functools.wraps(func)
         def wrapper(*func_args, **func_kwds):
-            if log_args:
-                _func_call_trace: str = '{func}(*{args}, **{kwds})'.format(
+            _func_call_trace = (
+                '{func}(*{args}, **{kwds})'.format(
                     func=_func_trace,
                     args=func_args,
                     kwds=func_kwds,
                 )
-            else:
-                _func_call_trace: str = _func_trace
+                if log_args
+                else _func_trace
+            )
 
             if log_call:
                 _logger.log(level, 'Call %s start.' % _func_call_trace)
@@ -245,13 +245,11 @@ def log_perf_counter(
 
             return func_return
 
-        return wrapper
+        return functools.update_wrapper(wrapper, func)
 
-    if param is None:
-        # called as @log_perf_counter(...)
+    if param is None:  # called as @log_perf_counter(...)
         return decorator
-    # called as @log_perf_counter
-    return decorator(param)
+    return decorator(param)  # called as @log_perf_counter
 
 
 def wrap_with_calls(
@@ -308,9 +306,7 @@ def wrap_with_calls(
     _args = args or tuple()
     _kwds = kwds or dict()
 
-    @functools.wraps(func)  # type: ignore
     def decorator(decorated_func):
-        @functools.wraps(decorated_func)
         def decorated_func_wrapper(
             *decorated_func_args, **decorated_func_kwds
         ):
@@ -370,7 +366,7 @@ def wrap_with_calls(
             # general result
             return decorated_func_result
 
-        return decorated_func_wrapper
+        return functools.update_wrapper(decorated_func_wrapper, decorated_func)
 
     return decorator
 
